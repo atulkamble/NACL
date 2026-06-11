@@ -1,4 +1,4 @@
-# AWS NACL (Network Access Control List) Complete Learning, Practice & Interview Guide
+# AWS NACL (Network Access Control List) 
 
 ---
 
