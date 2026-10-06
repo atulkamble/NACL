@@ -165,40 +165,51 @@ Internet
 ### Create
 
 ```bash
-aws ec2 create-network-acl \
-  --vpc-id vpc-xxxxxxxx
+aws ec2 create-network-acl --vpc-id vpc-09683ff71eaaac232
 ```
-
+```
+aws ec2 create-network-acl --vpc-id vpc-09683ff71eaaac232 --tag-specifications 'ResourceType=network-acl,Tags=[{Key=Name,Value=new-NACL}]'
+```
 ### View
 
 ```bash
 aws ec2 describe-network-acls
 ```
 
-### Allow HTTP
+### Allow Inbound HTTP rule — Port 80
 
 ```bash
 aws ec2 create-network-acl-entry \
-  --network-acl-id acl-xxxxxxxx \
-  --rule-number 100 \
-  --protocol 6 \
-  --rule-action allow \
-  --egress false \
-  --cidr-block 0.0.0.0/0 \
-  --port-range From=80,To=80
+  --cli-input-json '{
+    "NetworkAclId": "acl-00d1a744ffe03a7b5",
+    "RuleNumber": 100,
+    "Protocol": "6",
+    "RuleAction": "allow",
+    "Egress": false,
+    "CidrBlock": "0.0.0.0/0",
+    "PortRange": {
+      "From": 80,
+      "To": 80
+    }
+  }'
 ```
 
-### Allow Return Traffic
+### Allow Outbound return traffic
 
 ```bash
 aws ec2 create-network-acl-entry \
-  --network-acl-id acl-xxxxxxxx \
-  --rule-number 100 \
-  --protocol 6 \
-  --rule-action allow \
-  --egress true \
-  --cidr-block 0.0.0.0/0 \
-  --port-range From=1024,To=65535
+  --cli-input-json '{
+    "NetworkAclId": "acl-00d1a744ffe03a7b5",
+    "RuleNumber": 100,
+    "Protocol": "6",
+    "RuleAction": "allow",
+    "Egress": true,
+    "CidrBlock": "0.0.0.0/0",
+    "PortRange": {
+      "From": 1024,
+      "To": 65535
+    }
+  }'
 ```
 
 ---
