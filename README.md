@@ -290,3 +290,69 @@ Remember:
 3. **NACL supports ALLOW and DENY.**
 4. **Lowest-number matching rule wins.**
 5. **Inbound and outbound traffic are evaluated separately.**
+
+Confirm the NACL is associated with the EC2 subnet
+
+```
+aws ec2 describe-network-acls \
+  --network-acl-ids acl-00d1a744ffe03a7b5 \
+  --query 'NetworkAcls[0].Associations'
+```
+Create SG 
+
+```
+aws ec2 create-security-group \
+  --group-name nacl-test-sg \
+  --description "NACL HTTP Testing" \
+  --vpc-id vpc-09683ff71eaaac232
+```
+NoteDown Security Group ID 
+```
+sg-0ec8f8ce67cafe4b3
+```
+Allow port http
+```
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-0ec8f8ce67cafe4b3 \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+```
+Check Subnet IP Setting 
+```
+aws ec2 describe-subnets \
+  --subnet-ids subnet-04fd00143070f5a16 \
+  --query 'Subnets[0].MapPublicIpOnLaunch'
+```
+
+Get Latest AMI ID 
+```
+AMI_ID=$(aws ssm get-parameter \
+  --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
+  --query 'Parameter.Value' \
+  --output text)
+
+echo $AMI_ID
+```
+```
+ami-0d27e0fb3bac4d724
+```
+Create Instance 
+```
+aws ec2 run-instances \
+  --image-id ami-0d27e0fb3bac4d724 \
+  --instance-type t3.micro \
+  --subnet-id subnet-04fd00143070f5a16 \
+  --security-group-ids sg-0ec8f8ce67cafe4b3 \
+  --associate-public-ip-address \
+  --user-data '#!/bin/bash
+dnf install -y httpd
+systemctl enable --now httpd
+echo "<h1>NACL HTTP Test Successful</h1>" > /var/www/html/index.html' \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=NACL-Test-EC2}]'
+```
+Check Connection 
+```
+curl -v http://3.90.245.64
+```
+
