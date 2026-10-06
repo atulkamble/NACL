@@ -1,4 +1,4 @@
-# AWS Security Group — Core Guide
+# AWS Security Group 
 
 ## 1. What is a Security Group?
 
