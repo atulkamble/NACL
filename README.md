@@ -1,4 +1,4 @@
-# AWS NACL — Core Concepts
+# AWS NACL
 
 ## 1. What is NACL?
 
