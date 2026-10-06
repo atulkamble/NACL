@@ -1,559 +1,281 @@
-# AWS NACL (Network Access Control List) 
+# AWS NACL — Core Concepts
 
----
+## 1. What is NACL?
 
-# Module 1: Introduction to NACL
+**NACL (Network Access Control List)** is a **subnet-level firewall** in an AWS VPC.
 
-## What is NACL?
+It controls traffic **entering and leaving a subnet**.
 
-NACL (Network Access Control List) is a subnet-level virtual firewall that controls inbound and outbound traffic for one or more subnets within a VPC.
-
-NACL acts as an additional security layer before traffic reaches the EC2 instance.
-
----
-
-## Full Forms
-
-| Term | Full Form                      |
-| ---- | ------------------------------ |
-| AWS  | Amazon Web Services            |
-| VPC  | Virtual Private Cloud          |
-| NACL | Network Access Control List    |
-| SG   | Security Group                 |
-| IGW  | Internet Gateway               |
-| NAT  | Network Address Translation    |
-| CIDR | Classless Inter-Domain Routing |
-| EC2  | Elastic Compute Cloud          |
-| ALB  | Application Load Balancer      |
-
----
-
-# Module 2: Traffic Flow Understanding
-
-## AWS Packet Flow
-
-Internet User → Internet Gateway → Route Table → NACL → Security Group → EC2 Instance
-
-Traffic must pass all layers.
-
-If any layer blocks traffic, communication fails.
-
----
-
-## AWS Network Security Layers
-
-Layer 1 → Route Table
-
-Layer 2 → Network ACL
-
-Layer 3 → Security Group
-
-Layer 4 → Operating System Firewall
-
-Layer 5 → Application
-
----
-
-# Module 3: Stateful vs Stateless
-
-## NACL = Stateless
-
-NACL does not remember previous requests.
-
-Request and response must be allowed separately.
-
-Example:
-
-Laptop → EC2 (SSH Port 22)
-
-EC2 → Laptop (Ephemeral Port)
-
-Both directions require rules.
-
----
-
-## Security Group = Stateful
-
-Security Groups remember existing connections.
-
-If request is allowed:
-
-Laptop → EC2
-
-Return traffic automatically allowed.
-
-No separate response rule required.
-
----
-
-## Memory Trick
-
-NACL = No Memory = Stateless
-
-Security Group = Smart Guard = Stateful
-
----
-
-# Module 4: NACL Characteristics
-
-| Feature            | NACL   |
-| ------------------ | ------ |
-| Level              | Subnet |
-| Stateful           | No     |
-| Supports Deny      | Yes    |
-| Supports Allow     | Yes    |
-| Rule Order Matters | Yes    |
-| Inbound Rules      | Yes    |
-| Outbound Rules     | Yes    |
-| Applied To         | Subnet |
-
----
-
-# Module 5: NACL vs Security Group
-
-| Feature         | NACL       | Security Group |
-| --------------- | ---------- | -------------- |
-| Level           | Subnet     | Instance       |
-| Stateful        | No         | Yes            |
-| Supports Deny   | Yes        | No             |
-| Rule Processing | Sequential | All Rules      |
-| Return Traffic  | Manual     | Automatic      |
-| Applied To      | Subnet     | ENI/Instance   |
-
----
-
-# Module 6: NACL Rule Processing
-
-Rules are evaluated from lowest number to highest number.
-
-Example:
-
-Rule 90 → DENY 203.0.113.10
-
-Rule 100 → ALLOW 0.0.0.0/0
-
-Result:
-
-Traffic from 203.0.113.10 is denied because Rule 90 is processed first.
-
----
-
-# Module 7: Default vs Custom NACL
-
-## Default NACL
-
-Inbound → Allow All
-
-Outbound → Allow All
-
----
-
-## Custom NACL
-
-Inbound → Deny All
-
-Outbound → Deny All
-
-Until rules are added.
-
----
-
-# Module 8: Common Ports
-
-| Service    | Port |
-| ---------- | ---- |
-| SSH        | 22   |
-| HTTP       | 80   |
-| HTTPS      | 443  |
-| RDP        | 3389 |
-| DNS        | 53   |
-| MySQL      | 3306 |
-| PostgreSQL | 5432 |
-| SQL Server | 1433 |
-| Oracle     | 1521 |
-
----
-
-# Module 9: Ephemeral Ports
-
-Temporary ports used for return traffic.
-
-AWS Recommendation:
-
-1024-65535
-
-Examples:
-
-SSH Response
-
-HTTP Response
-
-HTTPS Response
-
-RDP Response
-
-Without Ephemeral Ports:
-
-Connection fails.
-
----
-
-# Module 10: NACL Architecture
-
-VPC (10.0.0.0/16)
-
-Public Subnet (10.0.1.0/24)
-
-Private Subnet (10.0.2.0/24)
-
-Web Server
-
-Database Server
-
-Public-NACL
-
-Private-NACL
-
----
-
-# Module 11: Scenario 1 – Public Web Server
-
-Requirement:
-
-Allow Website Access
-
-Allow SSH Administration
-
-Configuration:
-
-Inbound
-
-HTTP 80
-
-HTTPS 443
-
-SSH 22 (Admin IP Only)
-
-Outbound
-
-1024-65535
-
-Result:
-
-Website accessible.
-
-SSH restricted.
-
----
-
-# Module 12: Scenario 2 – Database Protection
-
-Requirement:
-
-Database accessible only from application subnet.
-
-Configuration:
-
-Inbound
-
-Port 3306
-
-Source:
-
-10.0.1.0/24
-
-Outbound
-
-1024-65535
-
-Result:
-
-Internet users cannot directly access DB.
-
----
-
-# Module 13: Scenario 3 – Block Malicious IP
-
-Requirement:
-
-Block attacker IP.
-
-Configuration:
-
-Rule 90
-
-203.0.113.10/32
-
-DENY
-
-Rule 100
-
-0.0.0.0/0
-
-ALLOW
-
-Result:
-
-Only attacker blocked.
-
----
-
-# Module 14: Scenario 4 – Block Entire Network
-
-Requirement:
-
-Block corporate network.
-
-Configuration:
-
-192.168.1.0/24
-
-DENY
-
-0.0.0.0/0
-
-ALLOW
-
-Result:
-
-Entire network blocked.
-
----
-
-# Module 15: Scenario 5 – Bastion Host
-
-Requirement:
-
-SSH only through Bastion Host.
-
-Public Subnet:
-
-Allow SSH from Admin IP.
-
-Private Subnet:
-
-Allow SSH only from Bastion Subnet.
-
-Result:
-
-Private servers protected.
-
----
-
-# Module 16: AWS CLI Commands
-
-## Create NACL
-
-aws ec2 create-network-acl 
---vpc-id vpc-123456
-
----
-
-## View NACLs
-
-aws ec2 describe-network-acls
-
----
-
-## Create Inbound Rule
-
-aws ec2 create-network-acl-entry 
---network-acl-id acl-123456 
---rule-number 100 
---protocol 6 
---rule-action allow 
---egress false 
---cidr-block 0.0.0.0/0 
---port-range From=80,To=80
-
----
-
-## Create Outbound Rule
-
-aws ec2 create-network-acl-entry 
---network-acl-id acl-123456 
---rule-number 100 
---protocol 6 
---rule-action allow 
---egress true 
---cidr-block 0.0.0.0/0 
---port-range From=1024,To=65535
-
----
-
-## Delete Rule
-
-aws ec2 delete-network-acl-entry 
---network-acl-id acl-123456 
---rule-number 100 
---egress false
-
----
-
-## Associate NACL
-
-aws ec2 replace-network-acl-association 
---association-id aclassoc-123456 
---network-acl-id acl-123456
-
----
-
-# Module 17: Troubleshooting Checklist
-
-## SSH Not Working
-
-Check:
-
-EC2 Running
-
-Public IP
-
-Security Group 22
-
-NACL 22
-
-Ephemeral Ports
-
-Route Table
-
+```text
+Internet
+   │
+   ▼
 Internet Gateway
+   │
+   ▼
+┌──────────────────────┐
+│       Subnet         │
+│                      │
+│        NACL          │
+│          │           │
+│          ▼           │
+│   Security Group     │
+│          │           │
+│          ▼           │
+│         EC2          │
+└──────────────────────┘
+```
 
 ---
 
-## Website Not Opening
+# 2. Core NACL Features
 
-Check:
-
-Apache/Nginx Running
-
-Security Group
-
-NACL
-
-Port 80
-
-Port 443
+| Feature | NACL |
+|---|---|
+| Works at | Subnet level |
+| Type | Stateless |
+| ALLOW rules | Yes |
+| DENY rules | Yes |
+| Inbound rules | Yes |
+| Outbound rules | Yes |
+| Rule processing | Lowest number first |
 
 ---
 
-## Database Not Reachable
+# 3. NACL is Stateless
 
-Check:
+NACL does **not remember connections**.
 
-Database Listening
+If incoming traffic is allowed, the required return traffic must also be allowed.
 
-Port 3306
-
-Security Group
-
-NACL
-
-Subnet Routing
-
----
-
-# Module 18: Production Best Practices
-
-Do not use Allow All.
-
-Use least privilege.
-
-Restrict SSH to office IP.
-
-Restrict RDP to office IP.
-
-Use NACL Deny Rules for known attackers.
-
-Separate Public and Private NACLs.
-
-Document all rule numbers.
-
-Keep gaps between rules.
+```text
+Client                         EC2
+  │                             │
+  │────── HTTP :80 ────────────▶│
+  │                             │
+  │◀────── Response ────────────│
+  │       Client Port           │
+```
 
 Example:
 
-100
+```text
+Inbound
+TCP 80 → ALLOW
 
-110
+Outbound
+TCP 1024-65535 → ALLOW
+```
 
-120
+**Remember:**
 
-130
-
-Allows future expansion.
-
----
-
-# Module 19: Exam Questions
-
-1. What is NACL?
-
-2. Why is NACL stateless?
-
-3. Difference between Security Group and NACL?
-
-4. Which AWS firewall supports Deny rules?
-
-5. Why are Ephemeral Ports required?
-
-6. Can one NACL be attached to multiple subnets?
-
-7. What happens if no rule matches?
-
-8. Which rule is processed first?
-
-9. Default NACL vs Custom NACL?
-
-10. Why is NACL considered subnet-level security?
+> NACL = Stateless = Check both directions.
 
 ---
 
-# Module 20: Important Points to Remember
+# 4. NACL vs Security Group
 
-✓ NACL works at Subnet Level
+| Feature | NACL | Security Group |
+|---|---|---|
+| Level | Subnet | ENI/Resource |
+| Stateful | ❌ | ✅ |
+| Allow | ✅ | ✅ |
+| Deny | ✅ | ❌ Explicit deny |
+| Rule order | Lowest first | No rule priority |
+| Return traffic | Explicitly permit | Automatic for established connections |
 
-✓ NACL is Stateless
+### Easy Memory
 
-✓ Supports Allow and Deny
-
-✓ Lowest Rule Number Wins
-
-✓ One Subnet can have only One NACL
-
-✓ One NACL can be attached to Multiple Subnets
-
-✓ Ephemeral Ports Required
-
-✓ Default NACL Allows All
-
-✓ Custom NACL Denies All
-
-✓ Security Group is Stateful
-
-✓ NACL is first line of defense at subnet level
+```text
+NACL → Subnet + Stateless + Allow/Deny
+SG   → Resource + Stateful + Allow
+```
 
 ---
 
-# Golden Rule
+# 5. Rule Processing
 
-Traffic Flow:
+NACL evaluates rules from the **lowest rule number to highest**.
 
-Route Table
+Example:
 
-↓
+| Rule | Source | Action |
+|---:|---|---|
+| 90 | 203.0.113.10/32 | DENY |
+| 100 | 0.0.0.0/0 | ALLOW |
+| * | All | DENY |
 
-Network ACL
+```text
+203.0.113.10
+      │
+      ▼
+ Rule 90
+    DENY
+      ✕
+```
 
-↓
+Even though Rule 100 allows traffic, Rule 90 matches first.
 
-Security Group
+> **First matching rule wins.**
 
-↓
+---
 
-Operating System Firewall
+# 6. Default vs Custom NACL
 
-↓
+| Type | Initial Behavior |
+|---|---|
+| Default NACL | Allows traffic |
+| Custom NACL | Denies traffic until ALLOW rules are created |
 
-Application
+---
 
-Successful communication requires all layers to permit traffic.
+# 7. Simple Web Server Example
+
+Requirement:
+
+```text
+Internet
+   │
+   │ HTTP :80
+   ▼
+ NACL
+   │
+   ▼
+  EC2
+```
+
+### Inbound
+
+| Rule | Port | Source | Action |
+|---:|---:|---|---|
+| 100 | 80 | 0.0.0.0/0 | ALLOW |
+| * | ALL | ALL | DENY |
+
+### Outbound
+
+| Rule | Port | Destination | Action |
+|---:|---:|---|---|
+| 100 | 1024-65535 | 0.0.0.0/0 | ALLOW |
+| * | ALL | ALL | DENY |
+
+---
+
+# 8. Create NACL — CLI
+
+### Create
+
+```bash
+aws ec2 create-network-acl \
+  --vpc-id vpc-xxxxxxxx
+```
+
+### View
+
+```bash
+aws ec2 describe-network-acls
+```
+
+### Allow HTTP
+
+```bash
+aws ec2 create-network-acl-entry \
+  --network-acl-id acl-xxxxxxxx \
+  --rule-number 100 \
+  --protocol 6 \
+  --rule-action allow \
+  --egress false \
+  --cidr-block 0.0.0.0/0 \
+  --port-range From=80,To=80
+```
+
+### Allow Return Traffic
+
+```bash
+aws ec2 create-network-acl-entry \
+  --network-acl-id acl-xxxxxxxx \
+  --rule-number 100 \
+  --protocol 6 \
+  --rule-action allow \
+  --egress true \
+  --cidr-block 0.0.0.0/0 \
+  --port-range From=1024,To=65535
+```
+
+---
+
+# 9. DENY Rule Example
+
+Block one IP:
+
+```text
+203.0.113.10/32
+```
+
+```bash
+aws ec2 create-network-acl-entry \
+  --network-acl-id acl-xxxxxxxx \
+  --rule-number 90 \
+  --protocol -1 \
+  --rule-action deny \
+  --egress false \
+  --cidr-block 203.0.113.10/32
+```
+
+Rules:
+
+```text
+90   DENY    203.0.113.10/32
+100  ALLOW   0.0.0.0/0
+```
+
+Because **90 < 100**, the blocked IP is denied first.
+
+---
+
+# 10. NACL Association
+
+```text
+VPC
+ │
+ ├── NACL-A
+ │     ├── Subnet-1
+ │     └── Subnet-2
+ │
+ └── NACL-B
+       └── Subnet-3
+```
+
+Remember:
+
+- **One subnet → one NACL at a time**
+- **One NACL → multiple subnets**
+
+---
+
+# 11. Most Important Points
+
+```text
+              NACL
+                │
+      ┌─────────┼─────────┐
+      │         │         │
+    Subnet   Stateless  Allow/Deny
+      │         │         │
+      │         │      Rule Number
+      │         │         │
+      │         │     Lowest First
+      │         │
+      │     Check Inbound
+      │          +
+      │     Check Outbound
+      │
+      └── Protects subnet traffic
+```
+
+### 5 Concepts Students Must Remember
+
+1. **NACL works at subnet level.**
+2. **NACL is stateless.**
+3. **NACL supports ALLOW and DENY.**
+4. **Lowest-number matching rule wins.**
+5. **Inbound and outbound traffic are evaluated separately.**
